@@ -1,3 +1,25 @@
+**Hinweis:** Dieses Projekt basiert auf dem exzellenten [local-voice-ai](https://github.com/ShayneP/local-voice-ai) Projekt von ShayneP. Es wurde angepasst und erweitert, um spezifische Anforderungen zu erfüllen.
+
+## Anpassungen gegenüber dem Original
+
+### Deutsche Sprachunterstützung
+- **Speech-to-Text (STT)**: Whisper wurde auf deutsche Spracherkennung konfiguriert (`language="de"`)
+- **Text-to-Speech (TTS)**: Kokoro wurde durch Edge-TTS ersetzt, da Kokoro keine deutschen Stimmen unterstützt
+  - Verwendet wird nun `travisvn/openai-edge-tts` mit der deutschen Stimme `de-DE-ConradNeural`
+- **System-Prompt**: Der Agent ("Coldbot") wurde mit deutschen Anweisungen konfiguriert
+- **RAG-System**: Deutsche Kontextnachrichten für das Retrieval-Augmented Generation System
+
+### Nginx Reverse Proxy
+- Vollständige Nginx-Konfiguration für HTTPS-Zugriff hinzugefügt
+- SSL/TLS-Zertifikatsverwaltung mit Let's Encrypt (Certbot)
+- WebSocket-Unterstützung für LiveKit-Verbindungen
+- Reverse Proxy für Frontend und LiveKit-Server
+
+## Überblick
+
+Ein vollständig lokaler Voice-AI-Agent mit deutscher Sprachunterstützung, der auf LiveKit, Whisper STT, Edge-TTS und Ollama basiert.
+
+
 <div align="center">
   <img src="./voice-assistant-frontend/.github/assets/app-icon.png" alt="App Icon" width="80" />
   <h1>🧠 Local Voice Agent</h1>
