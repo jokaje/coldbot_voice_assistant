@@ -1,19 +1,32 @@
 services:
-  kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+  edgetts:
+    image: travisvn/openai-edge-tts:latest
     ports:
-      - "8880:8880"
+      - "5050:5050"
+    environment:
+      - API_KEY=no-key-needed
+      - PORT=5050
+      - DEFAULT_VOICE=de-DE-ConradNeural
+      - DEFAULT_LANGUAGE=de-DE
+      - DEFAULT_RESPONSE_FORMAT=mp3
+      - DEFAULT_SPEED=1.0
+      - REQUIRE_API_KEY=False
     networks:
       - agent_network
+    restart: unless-stopped
 
   livekit:
     image: livekit/livekit-server:latest
     ports:
       - "7880:7880"
       - "7881:7881"
-    command: --dev --bind "0.0.0.0"
+      - "50000-50010:50000-50010/udp"
+    volumes:
+      - ./livekit.yaml:/livekit.yaml:ro
+    command: --config /livekit.yaml
     networks:
       - agent_network
+    restart: unless-stopped
 
   whisper:
     build:
@@ -50,22 +63,20 @@ services:
       - LIVEKIT_API_SECRET=secret
       - LIVEKIT_AGENT_PORT=7880
       - OPENAI_API_KEY=no-key-needed
-      - GROQ_API_KEY=no-key-needed
     depends_on:
       - livekit
-      - kokoro
+      - edgetts
       - whisper
       - ollama
     networks:
       - agent_network
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./voice-assistant-frontend
-    ports:
-      - "3000:3000"
     environment:
-      - NEXT_PUBLIC_LIVEKIT_URL=ws://localhost:7880
+      - NEXT_PUBLIC_LIVEKIT_URL=wss://coldnet.dedyn.io/livekit
       - LIVEKIT_URL=ws://livekit:7880
       - LIVEKIT_API_KEY=devkey
       - LIVEKIT_API_SECRET=secret
@@ -74,6 +85,29 @@ services:
       - livekit
     networks:
       - agent_network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/certbot-www:/var/www/certbot
+    depends_on:
+      - frontend
+      - livekit
+    networks:
+      - agent_network
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/certbot-www:/var/www/certbot
+    command: renew --quiet
 
 volumes:
   ollama:

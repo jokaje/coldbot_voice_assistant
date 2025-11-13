@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from livekit.agents import JobContext, WorkerOptions, cli
 from livekit.agents.voice import Agent, AgentSession
-from livekit.plugins import openai, silero, groq
+from livekit.plugins import openai, silero
 from livekit.agents import ChatContext, ChatMessage
 from sentence_transformers import SentenceTransformer
 import faiss
@@ -55,15 +55,28 @@ async def rag_lookup(query: str) -> str:
 
 class LocalAgent(Agent):
     def __init__(self) -> None:
-        stt = openai.STT(base_url="http://whisper:80/v1", model="Systran/faster-whisper-small")
-        llm = openai.LLM(base_url="http://ollama:11434/v1", model="gemma3:4b", timeout=30)
-        tts = groq.TTS(base_url="http://kokoro:8880/v1", model="kokoro", voice="af_nova")
+        stt = openai.STT(
+            base_url="http://whisper:80/v1", 
+            model="Systran/faster-whisper-small",
+            language="de"
+        )
+        llm = openai.LLM(
+            base_url="http://ollama:11434/v1", 
+            model="gemma3:4b", 
+            timeout=30
+        )
+        tts = openai.TTS(
+            base_url="http://edgetts:5050/v1",
+            model="tts-1",
+            voice="de-DE-ConradNeural"
+        )
         vad_inst = silero.VAD.load()
+        
         super().__init__(
             instructions="""
-                You are a helpful agent.
-                Never ever use emojis. Everything you say should be in plain text, since it will be spoken out loud.
-                Keep your responses short and concise. Never more than a sentence or two.
+                Du bist Coldbot, ein hilfreicher deutschsprachiger Assistent.
+                Verwende niemals Emojis. Alles was du sagst sollte reiner Text sein, da es laut vorgelesen wird.
+                Halte deine Antworten kurz und prägnant. Niemals mehr als ein oder zwei Sätze.
             """,
             stt=stt,
             llm=llm,
@@ -161,7 +174,7 @@ class LocalAgent(Agent):
         if rag_content:
             turn_ctx.add_message(
                 role="user",
-                content=f"Additional information relevant to the user's next message: {rag_content}"
+                content=f"Zusätzliche Informationen zur nächsten Nachricht des Benutzers: {rag_content}"
             )
             logger.info(f"Added RAG content to chat context: {rag_content}")
 
